@@ -402,6 +402,7 @@ export function convertApiConfigurationToProto(config: ApiConfiguration): ProtoA
 		huaweiCloudMaasApiKey: config.huaweiCloudMaasApiKey,
 		zaiApiLine: config.zaiApiLine,
 		zaiApiKey: config.zaiApiKey,
+		morphApiKey: config.morphApiKey,
 
 		// Plan mode configurations
 		planModeApiProvider: config.planModeApiProvider ? convertApiProviderToProto(config.planModeApiProvider) : undefined,
@@ -543,6 +544,7 @@ export function convertProtoToApiConfiguration(protoConfig: ProtoApiConfiguratio
 		huaweiCloudMaasApiKey: protoConfig.huaweiCloudMaasApiKey,
 		zaiApiLine: protoConfig.zaiApiLine,
 		zaiApiKey: protoConfig.zaiApiKey,
+		morphApiKey: protoConfig.morphApiKey,
 
 		// Plan mode configurations
 		planModeApiProvider:

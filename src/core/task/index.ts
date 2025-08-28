@@ -417,6 +417,13 @@ export class Task {
 		}
 	}
 
+	/**
+	 * Updates the Morph service for this task when settings change
+	 */
+	public updateMorphService(): void {
+		this.toolExecutor.updateMorphService()
+	}
+
 	async restoreCheckpoint(messageTs: number, restoreType: ClineCheckpointRestore, offset?: number) {
 		const clineMessages = this.messageStateHandler.getClineMessages()
 		const messageIndex = clineMessages.findIndex((m) => m.ts === messageTs) - (offset || 0)

@@ -105,6 +105,7 @@ export interface ApiHandlerOptions {
 	huaweiCloudMaasApiKey?: string
 	zaiApiKey?: string
 	zaiApiLine?: string
+	morphApiKey?: string
 	onRetryAttempt?: (attempt: number, maxRetries: number, delay: number, error: any) => void
 	// Plan mode configurations
 	planModeApiModelId?: string

@@ -46,6 +46,7 @@ export type SecretKey =
 	| "basetenApiKey"
 	| "vercelAiGatewayApiKey"
 	| "zaiApiKey"
+	| "morphApiKey"
 
 export type GlobalStateKey =
 	| "awsRegion"
@@ -112,6 +113,9 @@ export type GlobalStateKey =
 	| "openaiReasoningEffort"
 	| "mode"
 	| "customPrompt"
+	// Morph Fast Apply configurations
+	| "morphEnabled"
+	| "morphBaseUrl"
 	// Plan mode configurations
 	| "planModeApiProvider"
 	| "planModeApiModelId"
@@ -242,6 +246,10 @@ export interface GlobalState {
 	focusChainFeatureFlagEnabled: boolean
 	customPrompt: "compact" | undefined
 
+	// Morph Fast Apply configurations
+	morphEnabled: boolean
+	morphBaseUrl: string | undefined
+
 	// Plan mode configurations
 	planModeApiProvider: ApiProvider
 	planModeApiModelId: string | undefined
@@ -341,6 +349,7 @@ export interface Secrets {
 	huaweiCloudMaasApiKey: string | undefined
 	basetenApiKey: string | undefined
 	vercelAiGatewayApiKey: string | undefined
+	morphApiKey: string | undefined
 }
 
 export interface LocalState {

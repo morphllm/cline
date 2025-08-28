@@ -42,17 +42,27 @@ export const useApiConfigurationHandlers = () => {
 	 * @param updates - An object containing the fields to update and their new values
 	 */
 	const handleFieldsChange = async (updates: Partial<ApiConfiguration>) => {
+		console.log("[MORPH DEBUG] handleFieldsChange called with updates:", updates)
+		console.log("[MORPH DEBUG] Current apiConfiguration:", apiConfiguration)
+
 		const updatedConfig = {
 			...apiConfiguration,
 			...updates,
 		}
 
+		console.log("[MORPH DEBUG] Updated config:", updatedConfig)
+		console.log("[MORPH DEBUG] morphApiKey in updated config:", updatedConfig.morphApiKey ? "***SET***" : "***EMPTY***")
+
 		const protoConfig = convertApiConfigurationToProto(updatedConfig)
+		console.log("[MORPH DEBUG] Proto config morphApiKey:", protoConfig.morphApiKey ? "***SET***" : "***EMPTY***")
+
 		await ModelsServiceClient.updateApiConfigurationProto(
 			UpdateApiConfigurationRequest.create({
 				apiConfiguration: protoConfig,
 			}),
 		)
+
+		console.log("[MORPH DEBUG] API call completed")
 	}
 
 	const handleModeFieldChange = async <PlanK extends keyof ApiConfiguration, ActK extends keyof ApiConfiguration>(

@@ -88,6 +88,25 @@ console.log('Hello');
 </diff>
 </replace_in_file>
 
+**edit_file** — Lazy edit using // ... existing code ... format. Params: target_file, instructions (1st person), code_edit.  
+*Example:*
+<edit_file>
+<target_file>src/utils.ts</target_file>
+<instructions>I am adding error handling to the parseData function</instructions>
+<code_edit>
+// ... existing code ...
+function parseData(input: string) {
+  try {
+    return JSON.parse(input);
+  } catch (error) {
+    console.error('Parse error:', error);
+    return null;
+  }
+}
+// ... existing code ...
+</code_edit>
+</edit_file>
+
 **search_files** — Regex search. Params: path, regex, file_pattern (optional).
 
 **list_files** — List directory. Params: path, recursive (optional).  

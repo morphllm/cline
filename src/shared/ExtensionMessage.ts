@@ -71,6 +71,8 @@ export interface ExtensionState {
 	focusChainSettings: FocusChainSettings
 	focusChainFeatureFlagEnabled?: boolean
 	customPrompt?: string
+	morphEnabled?: boolean
+	morphBaseUrl?: string
 }
 
 export interface ClineMessage {

@@ -1,6 +1,7 @@
 import { ApiConfiguration, fireworksDefaultModelId } from "@shared/api"
 import { DEFAULT_FOCUS_CHAIN_SETTINGS } from "@shared/FocusChainSettings"
 import type { ExtensionContext } from "vscode"
+import { DEFAULT_MORPH_SETTINGS } from "@/services/morph/constants"
 import { DEFAULT_AUTO_APPROVAL_SETTINGS } from "@/shared/AutoApprovalSettings"
 import { CACHE_SERVICE_NOT_INITIALIZED } from "./error-messages"
 import { GlobalState, GlobalStateKey, LocalState, LocalStateKey, SecretKey, Secrets } from "./state-keys"
@@ -174,7 +175,12 @@ export class CacheService {
 		}
 
 		// Construct API configuration from cached component keys
-		return this.constructApiConfigurationFromCache()
+		const config = this.constructApiConfigurationFromCache()
+		console.log(
+			"[MORPH DEBUG] CacheService.getApiConfiguration - morphApiKey:",
+			config.morphApiKey ? "***SET***" : "***EMPTY***",
+		)
+		return config
 	}
 
 	/**
@@ -184,6 +190,11 @@ export class CacheService {
 		if (!this.isInitialized) {
 			throw new Error(CACHE_SERVICE_NOT_INITIALIZED)
 		}
+
+		console.log(
+			"[MORPH DEBUG] CacheService.setApiConfiguration - morphApiKey:",
+			apiConfiguration.morphApiKey ? "***SET***" : "***EMPTY***",
+		)
 
 		const {
 			apiKey,
@@ -252,6 +263,7 @@ export class CacheService {
 			huaweiCloudMaasApiKey,
 			vercelAiGatewayApiKey,
 			zaiApiKey,
+			morphApiKey,
 			requestTimeoutMs,
 			// Plan mode configurations
 			planModeApiProvider,
@@ -455,6 +467,7 @@ export class CacheService {
 			huaweiCloudMaasApiKey,
 			vercelAiGatewayApiKey,
 			zaiApiKey,
+			morphApiKey,
 		})
 	}
 
@@ -681,6 +694,7 @@ export class CacheService {
 			huaweiCloudMaasApiKey,
 			vercelAiGatewayApiKey,
 			zaiApiKey,
+			morphApiKey,
 			requestTimeoutMs,
 			authNonce,
 			// Plan mode configurations
@@ -778,6 +792,10 @@ export class CacheService {
 			lastShownAnnouncementId: state.lastShownAnnouncementId,
 			mcpMarketplaceCatalog: state.mcpMarketplaceCatalog,
 			customPrompt: state.customPrompt,
+
+			// Morph Fast Apply configuration
+			morphEnabled: state.morphEnabled ?? DEFAULT_MORPH_SETTINGS.morphEnabled,
+			morphBaseUrl: state.morphBaseUrl ?? DEFAULT_MORPH_SETTINGS.morphBaseUrl,
 
 			// Plan mode configuration updates
 			planModeApiProvider,
@@ -920,6 +938,7 @@ export class CacheService {
 			huaweiCloudMaasApiKey,
 			vercelAiGatewayApiKey,
 			zaiApiKey,
+			morphApiKey,
 		} satisfies Secrets
 
 		// Populate secrets cache directly
@@ -975,6 +994,7 @@ export class CacheService {
 			huaweiCloudMaasApiKey: this.secretsCache["huaweiCloudMaasApiKey"],
 			vercelAiGatewayApiKey: this.secretsCache["vercelAiGatewayApiKey"],
 			zaiApiKey: this.secretsCache["zaiApiKey"],
+			morphApiKey: this.secretsCache["morphApiKey"],
 
 			// Global state
 			awsRegion: this.globalStateCache["awsRegion"],

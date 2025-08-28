@@ -20,11 +20,23 @@ export async function updateApiConfigurationProto(
 			throw new Error("API configuration is required")
 		}
 
+		console.log(
+			"[MORPH DEBUG] Backend received proto config morphApiKey:",
+			request.apiConfiguration.morphApiKey ? "***SET***" : "***EMPTY***",
+		)
+
 		// Convert proto ApiConfiguration to application ApiConfiguration
 		const appApiConfiguration = convertProtoToApiConfiguration(request.apiConfiguration)
 
+		console.log(
+			"[MORPH DEBUG] Converted app config morphApiKey:",
+			appApiConfiguration.morphApiKey ? "***SET***" : "***EMPTY***",
+		)
+
 		// Update the API configuration in storage
 		controller.cacheService.setApiConfiguration(appApiConfiguration)
+
+		console.log("[MORPH DEBUG] Stored in cache service")
 
 		// Update the task's API handler if there's an active task
 		if (controller.task) {

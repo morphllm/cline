@@ -590,6 +590,10 @@ export class Controller {
 	async getStateToPostToWebview(): Promise<ExtensionState> {
 		// Get API configuration from cache for immediate access
 		const apiConfiguration = this.cacheService.getApiConfiguration()
+		console.log(
+			"[MORPH DEBUG] getStateToPostToWebview - morphApiKey in config:",
+			apiConfiguration?.morphApiKey ? "***SET***" : "***EMPTY***",
+		)
 		const lastShownAnnouncementId = this.cacheService.getGlobalStateKey("lastShownAnnouncementId")
 		const taskHistory = this.cacheService.getGlobalStateKey("taskHistory")
 		const autoApprovalSettings = this.cacheService.getGlobalStateKey("autoApprovalSettings")
@@ -617,6 +621,8 @@ export class Controller {
 			this.cacheService.getGlobalStateKey("welcomeViewCompleted") || this.authService.getInfo()?.user?.uid,
 		)
 		const customPrompt = this.cacheService.getGlobalStateKey("customPrompt")
+		const morphEnabled = this.cacheService.getGlobalStateKey("morphEnabled")
+		const morphBaseUrl = this.cacheService.getGlobalStateKey("morphBaseUrl")
 		const mcpResponsesCollapsed = this.cacheService.getGlobalStateKey("mcpResponsesCollapsed")
 		const terminalOutputLineLimit = this.cacheService.getGlobalStateKey("terminalOutputLineLimit")
 		const localClineRulesToggles = this.cacheService.getWorkspaceStateKey("localClineRulesToggles")
@@ -681,6 +687,8 @@ export class Controller {
 			mcpResponsesCollapsed,
 			terminalOutputLineLimit,
 			customPrompt,
+			morphEnabled,
+			morphBaseUrl,
 		}
 	}
 

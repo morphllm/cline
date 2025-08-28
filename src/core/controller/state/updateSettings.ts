@@ -29,6 +29,11 @@ export async function updateSettings(controller: Controller, request: UpdateSett
 			if (controller.task) {
 				const currentMode = await controller.getCurrentMode()
 				controller.task.api = buildApiHandler({ ...apiConfiguration, ulid: controller.task.ulid }, currentMode)
+
+				// Update Morph service if morphApiKey changed
+				if ("morphApiKey" in apiConfiguration) {
+					controller.task.updateMorphService()
+				}
 			}
 		}
 
@@ -174,6 +179,20 @@ export async function updateSettings(controller: Controller, request: UpdateSett
 		if (request.customPrompt !== undefined) {
 			const value = request.customPrompt === "compact" ? "compact" : undefined
 			controller.cacheService.setGlobalState("customPrompt", value)
+		}
+
+		// Update Morph settings
+		if (request.morphEnabled !== undefined) {
+			controller.cacheService.setGlobalState("morphEnabled", request.morphEnabled)
+		}
+
+		if (request.morphBaseUrl !== undefined) {
+			controller.cacheService.setGlobalState("morphBaseUrl", request.morphBaseUrl)
+		}
+
+		// Update task's Morph service if Morph settings changed
+		if ((request.morphEnabled !== undefined || request.morphBaseUrl !== undefined) && controller.task) {
+			controller.task.updateMorphService()
 		}
 
 		// Post updated state to webview

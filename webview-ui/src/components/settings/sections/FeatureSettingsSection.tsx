@@ -22,6 +22,8 @@ const FeatureSettingsSection = ({ renderSectionHeader }: FeatureSettingsSectionP
 		useAutoCondense,
 		focusChainSettings,
 		focusChainFeatureFlagEnabled,
+		morphEnabled,
+		morphBaseUrl,
 	} = useExtensionState()
 
 	const handleReasoningEffortChange = (newValue: OpenaiReasoningEffort) => {
@@ -188,6 +190,47 @@ const FeatureSettingsSection = ({ renderSectionHeader }: FeatureSettingsSectionP
 							</a>
 						</p>
 					</div>
+					<div style={{ marginTop: 10 }}>
+						<VSCodeCheckbox
+							checked={morphEnabled || false}
+							onChange={(e: any) => {
+								const checked = e.target.checked === true
+								updateSetting("morphEnabled", checked)
+							}}>
+							Enable Morph Fast Apply
+						</VSCodeCheckbox>
+						<p className="text-xs text-[var(--vscode-descriptionForeground)]">
+							Enables Morph's Fast Apply API for precise file editing with lazy edit format.{" "}
+							<a
+								className="text-[var(--vscode-textLink-foreground)] hover:text-[var(--vscode-textLink-activeForeground)]"
+								href="https://morphllm.com"
+								rel="noopener noreferrer"
+								target="_blank">
+								Learn more
+							</a>
+						</p>
+					</div>
+					{morphEnabled && (
+						<div style={{ marginTop: 10, marginLeft: 20 }}>
+							<label
+								className="block text-sm font-medium text-[var(--vscode-foreground)] mb-1"
+								htmlFor="morph-base-url">
+								Morph API Base URL
+							</label>
+							<VSCodeTextField
+								className="w-full"
+								id="morph-base-url"
+								onChange={(e: any) => {
+									updateSetting("morphBaseUrl", e.target.value)
+								}}
+								placeholder="https://api.morphllm.com/v1"
+								value={morphBaseUrl || ""}
+							/>
+							<p className="text-xs mt-[5px] text-[var(--vscode-descriptionForeground)]">
+								Base URL for the Morph API. Leave empty to use the default URL.
+							</p>
+						</div>
+					)}
 				</div>
 			</Section>
 		</div>

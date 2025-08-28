@@ -148,6 +148,50 @@ Checklist here (optional)
 }
 </replace_in_file>
 
+## edit_file
+Description: Request to make an edit to an existing file using a lazy edit format. This tool uses Morph's Fast Apply API to precisely apply edits when available, or falls back to traditional diff methods. Use this when you want to make targeted changes to parts of a file without rewriting the entire content.
+Parameters:
+- target_file: (required) The path of the file to edit (relative to the current working directory ${cwd.toPosix()})
+- instructions: (required) A single sentence describing what you're changing, written in first person (e.g., "I am adding error handling to the login function")
+- code_edit: (required) The lazy edit using the format with // ... existing code ... to represent unchanged code sections:
+
+Example format:
+\`\`\`
+// ... existing code ...
+FIRST_EDIT
+// ... existing code ...
+SECOND_EDIT
+// ... existing code ...
+THIRD_EDIT
+// ... existing code ...
+\`\`\`
+
+Critical rules:
+1. Use // ... existing code ... (or # ... existing code ... for Python/shell, <!-- ... existing code ... --> for HTML/XML) to represent unchanged sections
+2. Include minimal sufficient context of unchanged lines around the code you're editing to resolve ambiguity
+3. Each edit should contain the complete new code for that section
+4. DO NOT omit spans of pre-existing code without using the ... existing code ... comment
+5. If deleting a section, provide context before and after to clearly indicate what to remove
+6. Make all edits to a file in a single edit_file call rather than multiple calls
+${focusChainSettings.enabled ? `- task_progress: (optional) A checklist showing task progress after this tool use is completed. (See 'Updating Task Progress' section for more details)` : ""}
+Usage:
+<edit_file>
+<target_file>File path here</target_file>
+<instructions>Brief description of the change</instructions>
+<code_edit>
+// ... existing code ...
+Your edit here
+// ... existing code ...
+</code_edit>
+${
+	focusChainSettings.enabled
+		? `<task_progress>
+Checklist here (optional)
+</task_progress>`
+		: ""
+}
+</edit_file>
+
 
 ## search_files
 Description: Request to perform a regex search across files in a specified directory, providing context-rich results. This tool searches for patterns or specific content across multiple files, displaying each match with encapsulating context.

@@ -1,3 +1,4 @@
+import * as fs from "node:fs/promises"
 import { setTimeout as setTimeoutPromise } from "node:timers/promises"
 import Anthropic from "@anthropic-ai/sdk"
 import { ApiHandler } from "@core/api"
@@ -9,6 +10,7 @@ import { processFilesIntoText } from "@integrations/misc/extract-text"
 import { BrowserSession } from "@services/browser/BrowserSession"
 import { UrlContentFetcher } from "@services/browser/UrlContentFetcher"
 import { McpHub } from "@services/mcp/McpHub"
+import { createMorphService, MorphService } from "@services/morph"
 import { AutoApprovalSettings } from "@shared/AutoApprovalSettings"
 import { BrowserSettings } from "@shared/BrowserSettings"
 import { COMMAND_REQ_APP_STRING } from "@shared/combineCommandSequences"
@@ -60,6 +62,7 @@ import { showNotificationForApprovalIfAutoApprovalEnabled } from "./utils"
 
 export class ToolExecutor {
 	private autoApprover: AutoApprove
+	private morphService: MorphService | null
 
 	// Auto-approval methods using the AutoApprove class
 	private shouldAutoApproveTool(toolName: ToolUseName): boolean | [boolean, boolean] {
@@ -124,6 +127,8 @@ export class ToolExecutor {
 		private updateFCListFromToolResponse: (taskProgress: string | undefined) => Promise<void>,
 	) {
 		this.autoApprover = new AutoApprove(autoApprovalSettings)
+		this.morphService = createMorphService(cacheService)
+		console.log("[MORPH DEBUG] ToolExecutor initialized - morphService available:", this.morphService ? "YES" : "NO")
 	}
 
 	/**
@@ -137,12 +142,20 @@ export class ToolExecutor {
 	 * Defines the tools which should be restricted in plan mode
 	 */
 	private isPlanModeToolRestricted(toolName: ToolUseName): boolean {
-		const planModeRestrictedTools: ToolUseName[] = ["write_to_file", "replace_in_file"]
+		const planModeRestrictedTools: ToolUseName[] = ["write_to_file", "replace_in_file", "edit_file"]
 		return planModeRestrictedTools.includes(toolName)
 	}
 
 	public updateMode(mode: Mode): void {
 		this.mode = mode
+	}
+
+	/**
+	 * Update the Morph service when settings change
+	 */
+	public updateMorphService(): void {
+		this.morphService = createMorphService(this.cacheService)
+		console.log("[MORPH DEBUG] ToolExecutor.updateMorphService - morphService available:", this.morphService ? "YES" : "NO")
 	}
 
 	public updateStrictPlanModeEnabled(strictPlanModeEnabled: boolean): void {
@@ -210,8 +223,12 @@ export class ToolExecutor {
 				return `[${block.name}]`
 			case "new_rule":
 				return `[${block.name} for '${block.params.path}']`
+			case "edit_file":
+				return `[${block.name} for '${block.params.target_file}']`
 			case "web_fetch":
 				return `[${block.name} for '${block.params.url}']`
+			default:
+				return `[${block.name}]`
 		}
 	}
 
@@ -648,6 +665,54 @@ export class ToolExecutor {
 					await this.saveCheckpoint()
 					break
 				}
+			}
+			case "edit_file": {
+				console.log("[MORPH DEBUG] edit_file tool called!")
+				const targetFile: string | undefined = block.params.target_file
+				const instructions: string | undefined = block.params.instructions
+				const codeEdit: string | undefined = block.params.code_edit
+
+				console.log(
+					"[MORPH DEBUG] edit_file params - targetFile:",
+					targetFile,
+					"instructions:",
+					instructions ? "SET" : "EMPTY",
+					"codeEdit:",
+					codeEdit ? "SET" : "EMPTY",
+				)
+
+				if (!targetFile || !instructions || !codeEdit) {
+					this.taskState.consecutiveMistakeCount++
+					const missingParam = !targetFile ? "target_file" : !instructions ? "instructions" : "code_edit"
+					this.pushToolResult(await this.sayAndCreateMissingParamError("edit_file", missingParam), block)
+					await this.saveCheckpoint()
+					break
+				}
+
+				const accessAllowed = this.clineIgnoreController.validateAccess(targetFile)
+				if (!accessAllowed) {
+					await this.say("clineignore_error", targetFile)
+					this.pushToolResult(formatResponse.toolError(formatResponse.clineIgnoreError(targetFile)), block)
+					await this.saveCheckpoint()
+					break
+				}
+
+				try {
+					await this.handleEditFile(block, targetFile, instructions, codeEdit)
+				} catch (error) {
+					await this.say(
+						"error",
+						`Failed to apply edit to ${targetFile}: ${error instanceof Error ? error.message : String(error)}`,
+					)
+					this.pushToolResult(
+						formatResponse.toolError(
+							`Failed to apply edit: ${error instanceof Error ? error.message : String(error)}`,
+						),
+						block,
+					)
+					await this.saveCheckpoint()
+				}
+				break
 			}
 			case "read_file": {
 				const relPath: string | undefined = block.params.path
@@ -2397,5 +2462,182 @@ export class ToolExecutor {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Handle edit_file tool execution with Morph Fast Apply integration
+	 *
+	 * This method implements the dual-model architecture:
+	 * 1. Main chat model generates the lazy edit (already done)
+	 * 2. Morph model applies the edit precisely to the file
+	 * 3. Falls back to traditional diff if Morph is unavailable
+	 */
+	private async handleEditFile(block: ToolUse, targetFile: string, instructions: string, codeEdit: string): Promise<void> {
+		console.log("[MORPH DEBUG] handleEditFile called for:", targetFile)
+		console.log("[MORPH DEBUG] morphService available:", this.morphService ? "YES" : "NO")
+
+		const absolutePath = path.resolve(this.cwd, targetFile)
+		const fileExists = await fileExistsAtPath(absolutePath)
+
+		// Read original content
+		let originalContent = ""
+		if (fileExists) {
+			originalContent = await fs.readFile(absolutePath, "utf8")
+		}
+
+		let newContent: string
+
+		// Try Morph first if available
+		if (this.morphService) {
+			console.log("[MORPH DEBUG] Using Morph service for edit")
+			try {
+				newContent = await this.morphService.applyEdit({
+					instructions,
+					originalContent,
+					codeEdit,
+				})
+
+				// Track successful Morph usage
+				telemetryService.captureToolUsage(this.ulid, "edit_file", this.api.getModel().id, false, true)
+				console.log("Successfully applied edit using Morph Fast Apply")
+			} catch (morphError) {
+				console.warn(
+					"Morph API failed, falling back to traditional diff:",
+					morphError instanceof Error ? morphError.message : String(morphError),
+				)
+
+				// Fallback to traditional diff approach
+				newContent = await this.fallbackToTraditionalDiff(codeEdit, originalContent)
+
+				// Track Morph fallback
+				console.log("Used traditional diff editing due to Morph unavailability")
+			}
+		} else {
+			// No Morph service available, use traditional diff
+			newContent = await this.fallbackToTraditionalDiff(codeEdit, originalContent)
+			console.log("Morph service not available, using traditional diff editing")
+		}
+
+		// Apply the edit using existing file edit infrastructure
+		await this.applyFileEdit(block, targetFile, originalContent, newContent, fileExists)
+	}
+
+	/**
+	 * Fallback method when Morph is unavailable
+	 *
+	 * For now, this throws an error to encourage proper lazy edit usage.
+	 * In the future, this could convert lazy edits to SEARCH/REPLACE format.
+	 */
+	private async fallbackToTraditionalDiff(codeEdit: string, originalContent: string): Promise<string> {
+		// For now, we don't implement the complex conversion from lazy edit to SEARCH/REPLACE
+		// This encourages users to use the replace_in_file tool when Morph is unavailable
+		throw new Error(
+			"Morph service is unavailable and lazy edit fallback is not yet implemented. " +
+				"Please use the replace_in_file tool instead, or configure your Morph API key in settings.",
+		)
+	}
+
+	/**
+	 * Apply the file edit using existing infrastructure
+	 *
+	 * This reuses the existing file editing flow from write_to_file/replace_in_file
+	 * to ensure consistency in diff viewing, approval, and file operations.
+	 */
+	private async applyFileEdit(
+		block: ToolUse,
+		targetFile: string,
+		originalContent: string,
+		newContent: string,
+		fileExists: boolean,
+	): Promise<void> {
+		// Reuse existing file application logic from write_to_file/replace_in_file
+		const sharedMessageProps: ClineSayTool = {
+			tool: fileExists ? "editedExistingFile" : "newFileCreated",
+			path: getReadablePath(this.cwd, targetFile),
+			content: newContent,
+			operationIsLocatedInWorkspace: await isLocatedInWorkspace(targetFile),
+		}
+
+		// Show diff preview and get approval
+		if (!this.diffViewProvider.isEditing) {
+			await this.diffViewProvider.open(targetFile)
+		}
+		await this.diffViewProvider.update(newContent, true)
+		await setTimeoutPromise(300) // Wait for diff view to update
+		await this.diffViewProvider.scrollToFirstDiff()
+
+		const completeMessage = JSON.stringify(sharedMessageProps)
+
+		if (await this.shouldAutoApproveToolWithPath(block.name, targetFile)) {
+			await this.say("tool", completeMessage)
+			this.taskState.consecutiveAutoApprovedRequestsCount++
+			telemetryService.captureToolUsage(this.ulid, block.name, this.api.getModel().id, true, true)
+
+			await setTimeoutPromise(3500) // Let diagnostics catch up
+		} else {
+			showNotificationForApprovalIfAutoApprovalEnabled(
+				`Cline wants to ${fileExists ? "edit" : "create"} ${path.basename(targetFile)}`,
+				this.autoApprovalSettings.enabled,
+				this.autoApprovalSettings.enableNotifications,
+			)
+
+			const { response, text, images, files: askFiles } = await this.ask("tool", completeMessage, false)
+			if (response !== "yesButtonClicked") {
+				// User denied the operation
+				const fileDeniedNote = fileExists
+					? "The file was not updated, and maintains its original contents."
+					: "The file was not created."
+				this.pushToolResult(`The user denied this operation. ${fileDeniedNote}`, block)
+
+				if (text || (images && images.length > 0) || (askFiles && askFiles.length > 0)) {
+					await this.say("user_feedback", text, images, askFiles)
+					await this.saveCheckpoint()
+				}
+
+				await this.diffViewProvider.revertChanges()
+				await this.diffViewProvider.reset()
+				await this.saveCheckpoint()
+				return
+			}
+
+			telemetryService.captureToolUsage(this.ulid, block.name, this.api.getModel().id, false, true)
+		}
+
+		// Mark the file as edited by Cline to prevent false "recently modified" warnings
+		this.fileContextTracker.markFileAsEditedByCline(targetFile)
+
+		const { newProblemsMessage, userEdits, autoFormattingEdits, finalContent } = await this.diffViewProvider.saveChanges()
+		this.taskState.didEditFile = true
+
+		// Track file edit operation
+		await this.fileContextTracker.trackFileContext(targetFile, "cline_edited")
+
+		if (userEdits) {
+			await this.fileContextTracker.trackFileContext(targetFile, "user_edited")
+			await this.say(
+				"user_feedback_diff",
+				JSON.stringify({
+					tool: fileExists ? "editedExistingFile" : "newFileCreated",
+					path: getReadablePath(this.cwd, targetFile),
+					diff: userEdits,
+				} satisfies ClineSayTool),
+			)
+			await this.saveCheckpoint()
+		}
+
+		if (autoFormattingEdits) {
+			// Note: Auto-formatting occurred but we don't have a specific tool type for it
+			// The existing file editing tools will show the final result
+			console.log(`Auto-formatting applied to ${targetFile}:`, autoFormattingEdits)
+		}
+
+		this.pushToolResult(formatResponse.toolResult(completeMessage), block)
+
+		if (newProblemsMessage) {
+			await this.say("text", newProblemsMessage)
+		}
+
+		await this.diffViewProvider.reset()
+		await this.saveCheckpoint()
 	}
 }
