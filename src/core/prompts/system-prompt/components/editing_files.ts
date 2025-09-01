@@ -4,7 +4,9 @@ import type { PromptVariant, SystemPromptContext } from "../types"
 
 const EDITING_FILES_TEMPLATE_TEXT = `EDITING FILES
 
-You have access to three tools for working with files: **edit_file**, **replace_in_file**, and **write_to_file**. Prefer **edit_file** for most changes; fall back to **replace_in_file** when a small exact text change is sufficient; use **write_to_file** only as a last resort or when creating new files.
+You have access to three tools for working with files: **edit_file**, **replace_in_file**, and **write_to_file**. Always use **edit_file** by default for edits to existing files. **replce_in_file** is only used as fall back. **write_to_file** solely for creating new files or when a complete rewrite is truly unavoidable.
+
+Decision rule: edit_file → replace_in_file → write_to_file.
 
 # edit_file
 
@@ -62,6 +64,7 @@ You have access to three tools for working with files: **edit_file**, **replace_
 # Choosing the Appropriate Tool
 
 - **Default to edit_file** for most changes. It enables precise, context-aware edits while minimizing risk.
+- If in doubt, use **edit_file**.
 - **Fallback to replace_in_file** when:
   - A simple, exact-text change is sufficient and unambiguous
   - edit_file is unavailable or unnecessary for the scope of the change
@@ -71,6 +74,7 @@ You have access to three tools for working with files: **edit_file**, **replace_
   - You need to completely reorganize or restructure a file
   - The file is relatively small and the changes affect most of its content
   - You're generating boilerplate or template files
+- Do not use **write_to_file** on existing files unless both **edit_file** and **replace_in_file** are impossible.
 
 # Auto-formatting Considerations
 

@@ -61,6 +61,9 @@ export class EditFileToolHandler implements IFullyManagedTool {
 
 		try {
 			// Use Morph service with current state manager
+			Logger.debug(
+				`[EditFileToolHandler] Invoking Morph fast apply for '${target_file}' (instructionsLen=${instructions.length}, codeEditLen=${code_edit.length}, initialLen=${initialCode.length})`,
+			)
 			const morphService = new MorphApplyService(config.services.stateManager)
 			const result = await morphService.applyEdit(initialCode, instructions, code_edit)
 
@@ -69,13 +72,16 @@ export class EditFileToolHandler implements IFullyManagedTool {
 				Logger.warn(`[EditFileToolHandler] Morph Apply failed, initiating fallback: ${errorMessage}`)
 				await config.callbacks.say(
 					"error",
-					`Morph Fast Apply failed for ${target_file}: ${errorMessage}. Instructing LLM to fall back to replace_in_file.`,
+					`Morph Fast Apply failed for ${target_file}: ${errorMessage}. Instructing LLM to fall back to replace_in_file`,
 				)
 				return formatResponse.toolError(
 					`Morph Fast Apply failed: ${errorMessage}. You MUST now use replace_in_file as a fallback to apply the required changes based on the original instructions.`,
 				)
 			}
 
+			Logger.debug(
+				`[EditFileToolHandler] Morph succeeded for '${target_file}', merged content length=${result.length}. Proceeding to write_to_file.`,
+			)
 			// Apply merged code by delegating to write_to_file
 			const writeHandler = new WriteToFileToolHandler(this.validator)
 			const writeBlock: ToolUse = {

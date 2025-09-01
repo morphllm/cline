@@ -27,6 +27,8 @@ const FOCUS_CHAIN_EXAMPLE_EDIT = `<task_progress>
 
 const TOOL_USE_EXAMPLES_TEMPLATE_TEXT = `# Tool Use Examples
 
+Default tool selection order: edit_file → replace_in_file → write_to_file. Always use edit_file by default; use others only as fallback.
+
 ## Example 1: Requesting to execute a command
 
 <execute_command>

@@ -26,7 +26,7 @@ We must enable secure storage for the Morph API key and configuration for the en
   * **File to Edit:** `src/config.ts` (or similar configuration file)
   * **Action:** Define the default values:
       * `MORPH_API_URL`: `https://api.morphllm.com/v1`
-      * Default Model: `morph-v3-large`
+      * Default Model: `morph-v3-fast`
 
 #### 1.2 Morph Apply Service Implementation
 

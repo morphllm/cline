@@ -25,6 +25,11 @@ export class MorphApplyService {
 		const apiKey = morphApiKey
 		const baseUrl = morphApiUrl || DEFAULT_MORPH_API_URL
 
+		// Basic debug to verify Morph path engagement and input sizes
+		Logger.debug(
+			`[MorphApplyService] applyEdit invoked (model=${DEFAULT_MORPH_MODEL}, baseUrl=${baseUrl}); sizes: initialCode=${initialCode?.length ?? 0}, instructions=${instructions?.length ?? 0}, codeEdit=${codeEdit?.length ?? 0}`,
+		)
+
 		if (!apiKey) {
 			// We return an error string instead of throwing, so the tool handler can manage the fallback logic.
 			Logger.warn("[MorphApplyService] Morph API key is not configured.")
@@ -39,6 +44,7 @@ export class MorphApplyService {
 		const payload = this.constructPayload(initialCode, instructions, codeEdit)
 
 		try {
+			const startMs = Date.now()
 			Logger.info(`[MorphApplyService] Calling Morph API at ${baseUrl}`)
 			const response = await client.chat.completions.create({
 				model: DEFAULT_MORPH_MODEL,
@@ -56,6 +62,9 @@ export class MorphApplyService {
 				throw new Error("Morph API returned null or undefined content.")
 			}
 
+			Logger.debug(
+				`[MorphApplyService] Morph API succeeded in ${Date.now() - startMs}ms; mergedCode length=${mergedCode.length}`,
+			)
 			return mergedCode
 		} catch (error) {
 			const clineError = errorService.toClineError(error, DEFAULT_MORPH_MODEL, "morph")
