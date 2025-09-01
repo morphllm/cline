@@ -87,7 +87,33 @@ const TOOL_USE_EXAMPLES_TEMPLATE_TEXT = `# Tool Use Examples
 </context>
 </new_task>
 
-## Example 4: Requesting to make targeted edits to a file
+## Example 4: Requesting to make semantic edits to a file
+
+<edit_file>
+<target_file>src/components/App.tsx</target_file>
+<instructions>I will add a loading state and update submit logic</instructions>
+<code_edit>
+import React, { useState } from 'react';
+
+function App() {
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    setLoading(true);
+    // ... existing code ...
+    setLoading(false);
+  }
+
+  return (
+    <div>
+      {/* ... existing code ... */}
+    </div>
+  );
+}
+</code_edit>
+{{FOCUS_CHAIN_EXAMPLE_EDIT}}</edit_file>
+
+## Example 5: Requesting to make targeted edits to a file
 
 <replace_in_file>
 <path>src/components/App.tsx</path>
@@ -123,7 +149,7 @@ return (
 {{FOCUS_CHAIN_EXAMPLE_EDIT}}</replace_in_file>
 
 
-## Example 5: Requesting to use an MCP tool
+## Example 6: Requesting to use an MCP tool
 
 <use_mcp_tool>
 <server_name>weather-server</server_name>
@@ -136,7 +162,7 @@ return (
 </arguments>
 </use_mcp_tool>
 
-## Example 6: Another example of using an MCP tool (where the server name is a unique identifier such as a URL)
+## Example 7: Another example of using an MCP tool (where the server name is a unique identifier such as a URL)
 
 <use_mcp_tool>
 <server_name>github.com/modelcontextprotocol/servers/tree/main/src/github</server_name>

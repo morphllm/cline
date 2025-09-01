@@ -4,7 +4,24 @@ import type { PromptVariant, SystemPromptContext } from "../types"
 
 const EDITING_FILES_TEMPLATE_TEXT = `EDITING FILES
 
-You have access to two tools for working with files: **write_to_file** and **replace_in_file**. Understanding their roles and selecting the right one for the job will help ensure efficient and accurate modifications.
+You have access to three tools for working with files: **edit_file**, **replace_in_file**, and **write_to_file**. Prefer **edit_file** for most changes; fall back to **replace_in_file** when a small exact text change is sufficient; use **write_to_file** only as a last resort or when creating new files.
+
+# edit_file
+
+## Purpose
+
+- Make semantic, targeted edits to specific parts of an existing file by specifying only the changed lines and using placeholders for unchanged code.
+
+## When to Use
+
+- Default choice for most modifications where you want to minimize risk and avoid rewriting entire files.
+- Multiple small or medium edits within a single file, including structural changes that are brittle with plain search/replace.
+
+## Important Considerations
+
+- Use placeholders to represent unchanged sections (e.g., // ... existing code ...). Provide minimal but sufficient surrounding context before and after your changes.
+- Combine all required changes to a single file into one edit_file call when possible.
+- If **edit_file** is unavailable or clearly unnecessary for a trivial exact-text change, fall back to **replace_in_file**.
 
 # write_to_file
 
@@ -44,10 +61,13 @@ You have access to two tools for working with files: **write_to_file** and **rep
 
 # Choosing the Appropriate Tool
 
-- **Default to replace_in_file** for most changes. It's the safer, more precise option that minimizes potential issues.
+- **Default to edit_file** for most changes. It enables precise, context-aware edits while minimizing risk.
+- **Fallback to replace_in_file** when:
+  - A simple, exact-text change is sufficient and unambiguous
+  - edit_file is unavailable or unnecessary for the scope of the change
 - **Use write_to_file** when:
   - Creating new files
-  - The changes are so extensive that using replace_in_file would be more complex or risky
+  - The changes are so extensive that using edit_file or replace_in_file would be more complex or risky
   - You need to completely reorganize or restructure a file
   - The file is relatively small and the changes affect most of its content
   - You're generating boilerplate or template files
@@ -69,10 +89,10 @@ You have access to two tools for working with files: **write_to_file** and **rep
 # Workflow Tips
 
 1. Before editing, assess the scope of your changes and decide which tool to use.
-2. For targeted edits, apply replace_in_file with carefully crafted SEARCH/REPLACE blocks. If you need multiple changes, you can stack multiple SEARCH/REPLACE blocks within a single replace_in_file call.
-3. For major overhauls or initial file creation, rely on write_to_file.
+2. Prefer a single **edit_file** call for a file when making multiple related edits; otherwise apply **replace_in_file** with carefully crafted SEARCH/REPLACE blocks. If you need multiple changes, you can stack multiple SEARCH/REPLACE blocks within a single replace_in_file call.
+3. For major overhauls or initial file creation, rely on **write_to_file**.
 4. Once the file has been edited with either write_to_file or replace_in_file, the system will provide you with the final state of the modified file. Use this updated content as the reference point for any subsequent SEARCH/REPLACE operations, since it reflects any auto-formatting or user-applied changes.
-By thoughtfully selecting between write_to_file and replace_in_file, you can make your file editing process smoother, safer, and more efficient.`
+By thoughtfully selecting between edit_file, replace_in_file, and write_to_file (in that order of preference), you can make your file editing process smoother, safer, and more efficient.`
 
 export async function getEditingFilesSection(variant: PromptVariant, _context: SystemPromptContext): Promise<string> {
 	const template = variant.componentOverrides?.[SystemPromptSection.EDITING_FILES]?.template || EDITING_FILES_TEMPLATE_TEXT
