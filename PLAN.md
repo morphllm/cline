@@ -53,7 +53,7 @@ To isolate the external dependency, we will create a dedicated service.
 The user interface must allow configuration of the Morph settings.
 
   * **Strategy:** Create a dedicated settings section for code editing utilities.
-  * **New File (Suggested):** `webview-ui/src/components/settings/sections/CodeEditingSettings.tsx`
+  * **New File (Suggested):** `webview-ui/src/components/settings/sections/CodeEditingSettingsSection.tsx`
   * **Action:** Implement a React component with inputs for the Morph API Key and URL.
   * **Integration:** Integrate this component into the main settings view hierarchy. The existing gRPC mechanisms (e.g., `src/core/controller/state/updateSettings.ts`) will handle persistence via the `StateManager`.
 
