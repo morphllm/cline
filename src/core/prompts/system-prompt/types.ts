@@ -104,6 +104,8 @@ export interface SystemPromptContext {
 	readonly browserSettings?: BrowserSettings
 	readonly isTesting?: boolean
 	readonly runtimePlaceholders?: Readonly<Record<string, unknown>>
+	// New: gate for exposing replace_in_file tool and prompt variant
+	readonly enableSearchReplaceTool?: boolean
 }
 
 /**

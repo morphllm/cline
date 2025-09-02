@@ -685,6 +685,8 @@ export class Controller {
 			mcpResponsesCollapsed,
 			terminalOutputLineLimit,
 			customPrompt,
+			// expose replace_in_file toggle to webview
+			enableSearchReplaceTool: this.stateManager.getGlobalStateKey("enableSearchReplaceTool"),
 		}
 	}
 

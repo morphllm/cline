@@ -47,6 +47,14 @@ export async function updateSettings(controller: Controller, request: UpdateSett
 			controller.stateManager.setGlobalState("enableCheckpointsSetting", request.enableCheckpointsSetting)
 		}
 
+		// New: Update enableSearchReplaceTool setting
+		if ((request as any).enableSearchReplaceTool !== undefined) {
+			controller.stateManager.setGlobalState(
+				"enableSearchReplaceTool" as any,
+				Boolean((request as any).enableSearchReplaceTool) as unknown as never,
+			)
+		}
+
 		// Update MCP marketplace setting
 		if (request.mcpMarketplaceEnabled !== undefined) {
 			controller.stateManager.setGlobalState("mcpMarketplaceEnabled", request.mcpMarketplaceEnabled)

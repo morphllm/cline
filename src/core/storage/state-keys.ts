@@ -83,6 +83,9 @@ export interface GlobalState {
 	focusChainFeatureFlagEnabled: boolean
 	customPrompt: "compact" | undefined
 	difyBaseUrl: string | undefined
+	morphApiUrl: string | undefined
+	// New: gate for replace_in_file tool availability (default false)
+	enableSearchReplaceTool: boolean
 
 	// Plan mode configurations
 	planModeApiProvider: ApiProvider
@@ -184,6 +187,7 @@ export interface Secrets {
 	basetenApiKey: string | undefined
 	vercelAiGatewayApiKey: string | undefined
 	difyApiKey: string | undefined
+	morphApiKey: string | undefined
 }
 
 export interface LocalState {
