@@ -71,6 +71,8 @@ export interface ExtensionState {
 	focusChainSettings: FocusChainSettings
 	focusChainFeatureFlagEnabled?: boolean
 	customPrompt?: string
+	// New: gate for Search/Replace tool in UI
+	enableSearchReplaceTool?: boolean
 }
 
 export interface ClineMessage {
@@ -189,14 +191,14 @@ export interface ClinePlanModeResponse {
 	selected?: string
 }
 
+export interface ClineAskNewTask {
+	context: string
+}
+
 export interface ClineAskQuestion {
 	question: string
 	options?: string[]
 	selected?: string
-}
-
-export interface ClineAskNewTask {
-	context: string
 }
 
 export interface ClineApiReqInfo {

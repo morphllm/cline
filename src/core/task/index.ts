@@ -1707,6 +1707,8 @@ export class Task {
 			clineIgnoreInstructions,
 			preferredLanguageInstructions,
 			browserSettings: this.browserSettings,
+			// New: gate replace_in_file tool exposure (default disabled)
+			enableSearchReplaceTool: this.stateManager.getGlobalStateKey("enableSearchReplaceTool") ?? false,
 		}
 
 		const systemPrompt = await getSystemPrompt(promptContext)
